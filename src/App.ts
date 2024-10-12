@@ -2,7 +2,8 @@ import express, { Express } from 'express'
 import Controller from './controllers/Controller'
 import cors from 'cors'
 import { Pool } from 'pg'
-import Service from './services/Service';
+import fs from 'fs'
+
 
 interface ControllerConstructor {
     new(conn: Pool): Controller;
@@ -36,6 +37,26 @@ export default class App {
         try {
             await this.conn.connect()
             console.log("Database connected successfully");
+
+            const exists = (await this.conn.query(`--sql
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    AND table_name = 'users'
+                );`)).rows[0].exists
+
+
+            if (!exists) {
+                console.log("Creating tables...")
+                const script = fs.readFileSync('src/database/init.sql', {
+                    encoding: 'utf-8'
+                })
+
+                await this.conn.query(script)
+
+                console.log("Tables created successfully...")
+            }
         } catch (err) {
             console.log("Database connection error")
             throw err
