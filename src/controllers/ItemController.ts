@@ -24,9 +24,9 @@ export default class ItemController extends Controller {
     private async getAll(req: Request, res: Response) {
         const itemService = new ItemService(this.conn)
 
-        const users = await itemService.findAll()
+        const categories = await itemService.findAll()
 
-        res.send(users)
+        res.send(categories)
         return
     }
 
@@ -34,9 +34,9 @@ export default class ItemController extends Controller {
         const id = +req.params.id
         const itemService = new ItemService(this.conn)
 
-        const users = await itemService.findAllByStockId(id)
+        const categories = await itemService.findAllByStockId(id)
 
-        res.send(users)
+        res.send(categories)
         return
     }
 
@@ -45,9 +45,9 @@ export default class ItemController extends Controller {
         const itemService = new ItemService(this.conn)
 
         try {
-            const user = await itemService.findByID(id)
+            const category = await itemService.findByID(id)
 
-            res.send(user)
+            res.send(category)
             return
         } catch (err) {
             res.status(404).send()
@@ -92,7 +92,7 @@ export default class ItemController extends Controller {
             const data = RequestService.validateAuthHeader(req, res)
 
             if (data.userId != item.user_id) {
-                res.status(401).send({ error: "You can't create this item" })
+                res.status(401).send({ error: "You can't update this item" })
                 return
             }
 

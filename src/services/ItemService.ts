@@ -18,7 +18,8 @@ export default class ItemService {
                 user_id,
                 employee_id,
                 created_at,
-                updated_at
+                updated_at,
+                stock
             FROM items
         `)
 
@@ -34,7 +35,8 @@ export default class ItemService {
                 user_id,
                 employee_id,
                 created_at,
-                updated_at
+                updated_at,
+                stock
             FROM items
             WHERE user_id = $1
         `, [id])

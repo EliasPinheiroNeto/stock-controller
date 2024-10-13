@@ -2,8 +2,8 @@ import { z } from "zod";
 
 export const categorySchema = z.object({
     id: z.coerce.number(),
-    user_id: z.string(),
-    employee_id: z.string().optional(),
+    user_id: z.number(),
+    employee_id: z.number().optional(),
     name: z.string(),
     description: z.string().optional(),
     created_at: z.date(),
@@ -13,8 +13,7 @@ export const categorySchema = z.object({
 export const categoryCreateSchema = z.object({
     name: z.string(),
     description: z.string().optional(),
-    user_id: z.string(),
-    employee_id: z.string().optional()
+    employee_id: z.number().optional()
 }).strict()
 
 export const categoryUpdateSchema = z.object({
