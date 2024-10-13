@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { UserCreateSchema, UserSchema, UserUpdateSchema } from "../schemas/userSchema";
+import { UserCreateSchema, UserFullSchema, UserLoginSchema, UserSchema, UserUpdateSchema } from "../schemas/userSchema";
 import AuthService from "./AuthService";
 
 export default class UserService {
@@ -77,5 +77,45 @@ export default class UserService {
         const result = await this.conn.query<UserSchema>(query, values);
 
         return result.rows[0]
+    }
+
+    public async delete(id: number) {
+        const result = await this.conn.query<UserFullSchema>(`--sql
+            DELETE FROM users
+            WHERE id = $1
+            RETURNING *
+        `, [id]);
+
+        if (result.rowCount == 0) {
+            throw new Error("User not found")
+        }
+
+        return result.rows[0]
+    }
+
+    public async validateLogin(data: UserLoginSchema) {
+        const result = await this.conn.query<UserFullSchema>(`--sql
+            SELECT
+                id,
+                name,
+                email,
+                password,
+                created_at,
+                updated_at
+            FROM users
+            WHERE email = $1
+        `, [data.email])
+
+        if (result.rowCount == 0) {
+            throw new Error()
+        }
+
+        const { password, ...user } = result.rows[0]
+
+        if (!(await AuthService.verifyPassword(data.password, password))) {
+            throw new Error()
+        }
+
+        return user
     }
 }

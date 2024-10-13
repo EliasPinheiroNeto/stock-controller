@@ -3,44 +3,27 @@ import { AnyZodObject, z } from "zod"
 
 import { promisify } from 'util';
 import { randomBytes, pbkdf2 as pbkdf2Callback } from 'crypto'
+import { tokenSchema, TokenSchema } from '../schemas/tokenSchema';
 
 const pbkdf2 = promisify(pbkdf2Callback);
 
 export default class AuthService {
-    // static generateToken(data: UserToken | EmployeeToken) {
-    //     return jwt.sign(data, process.env.SECRET, {
-    //         expiresIn: "12h"
-    //     })
-    // }
+    static generateToken(data: TokenSchema) {
+        return jwt.sign(data, process.env.SECRET, {
+            expiresIn: process.env.TOKEN_TIME ?? '12h'
+        })
+    }
 
-    // static verifyToken<T extends AnyZodObject>(token: string, schema: T) {
-    //     try {
-    //         const result = jwt.verify(token, process.env.SECRET)
-    //         const tokenData: z.infer<typeof schema> = schema.parse(result)
+    static validateToken(token: string) {
+        try {
+            const result = jwt.verify(token, process.env.SECRET)
+            const tokenData = tokenSchema.parse(result)
 
-    //         return tokenData
-    //     } catch (err) {
-    //         return undefined
-    //     }
-    // }
-
-    // static decodeToken<T extends AnyZodObject>(authorizationToken: string | undefined, schema: T) {
-    //     const [type, token] = authorizationToken?.split(' ') ?? [];
-
-    //     if (!token) {
-    //         return
-    //     }
-
-    //     const result = jwt.decode(token)
-
-    //     try {
-    //         const tokenData: z.infer<typeof schema> = schema.parse(result)
-
-    //         return tokenData
-    //     } catch (err) {
-    //         return
-    //     }
-    // }
+            return tokenData
+        } catch (err) {
+            throw new Error("invalid Token")
+        }
+    }
 
     static async hashPassword(password: string): Promise<string> {
         const salt = randomBytes(16).toString('hex');

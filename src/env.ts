@@ -9,6 +9,7 @@ const envSchema = z.object({
     DATABASE_PASSWORD: z.string(),
     DATABASE_NAME: z.string(),
     SECRET: z.string(),
+    TOKEN_TIME: z.string().optional()
 })
 
 type EnvSchema = z.infer<typeof envSchema>
