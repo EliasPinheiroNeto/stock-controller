@@ -24,12 +24,10 @@ export default class RequestService {
             const [type, token] = req.headers.authorization?.split(' ') ?? [];
 
             if (!type || type !== "Bearer") {
-                res.status(401).send({ error: "Invalid token" })
                 throw new Error("Invalid token")
             }
 
             if (!token) {
-                res.status(401).send({ error: "No token provied" })
                 throw new Error("Invalid token")
             }
 
