@@ -87,12 +87,16 @@ CREATE TABLE IF NOT EXISTS stock_movements (
     created_at TIMESTAMP DEFAULT NOW(),
 
     user_id INT NOT NULL,
+    item_id INT NOT NULL,
     employee_id INT,
-
     movement_type_id INT NOT NULL,
 
     CONSTRAINT fk_user_stock_movements FOREIGN KEY (user_id)
         REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_item_stock_movements FOREIGN KEY (item_id)
+        REFERENCES items(id)
         ON DELETE CASCADE,
 
     CONSTRAINT fk_employee_stock_movements FOREIGN KEY (employee_id)

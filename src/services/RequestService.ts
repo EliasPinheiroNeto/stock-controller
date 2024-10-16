@@ -19,7 +19,7 @@ export default class RequestService {
         }
     }
 
-    static validateAuthHeader(req: Request, res: Response) {
+    static validateAuthHeader(req: Request) {
         try {
             const [type, token] = req.headers.authorization?.split(' ') ?? [];
 

@@ -62,7 +62,7 @@ export default class ItemController extends Controller {
         const itemService = new ItemService(this.conn)
 
         try {
-            const data = RequestService.validateAuthHeader(req, res)
+            const data = RequestService.validateAuthHeader(req)
 
             if (data.userId != id) {
                 res.status(401).send({ error: "You can't create this item" })
@@ -89,7 +89,7 @@ export default class ItemController extends Controller {
         try {
             const item = await itemService.findByID(id)
 
-            const data = RequestService.validateAuthHeader(req, res)
+            const data = RequestService.validateAuthHeader(req)
 
             if (data.userId != item.user_id) {
                 res.status(401).send({ error: "You can't update this item" })
@@ -113,7 +113,7 @@ export default class ItemController extends Controller {
         const itemService = new ItemService(this.conn)
 
         try {
-            const data = RequestService.validateAuthHeader(req, res)
+            const data = RequestService.validateAuthHeader(req)
 
             const item = await itemService.findByID(id)
 
