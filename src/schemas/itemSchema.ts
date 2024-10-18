@@ -14,7 +14,6 @@ export const itemSchema = z.object({
 export const itemCreateSchema = z.object({
     name: z.string(),
     description: z.string().optional(),
-    employee_id: z.number().optional(),
     category_ids: z.array(z.number()).optional(),
 }).strict()
 

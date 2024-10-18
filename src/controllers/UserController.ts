@@ -90,7 +90,7 @@ export default class UserController extends Controller {
         const userService = new UserService(this.conn)
 
         try {
-            const data = RequestService.validateAuthHeader(req, res)
+            const data = RequestService.validateAuthHeader(req.headers.authorization)
 
             if (id != data.userId) {
                 res.status(401).send({ error: "You can't delete this user" })

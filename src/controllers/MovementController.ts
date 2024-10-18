@@ -37,7 +37,7 @@ export default class MovementController extends Controller {
         const movementService = new MovementService(this.conn)
 
         try {
-            const data = RequestService.validateAuthHeader(req)
+            const data = RequestService.validateAuthHeader(req.headers.authorization)
 
             const result = await movementService.insert(data.userId, body)
 

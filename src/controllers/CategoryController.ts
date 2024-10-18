@@ -10,7 +10,7 @@ export default class CategoryController extends Controller {
         this.router.get('/categories/:id', this.getOne.bind(this))
         this.router.get('/users/:id/categories', this.getAllFromStock.bind(this))
 
-        this.router.post('/users/:id/categories',
+        this.router.post('/categories',
             [RequestService.validateBody(categoryCreateSchema)],
             this.create.bind(this))
 
@@ -63,12 +63,7 @@ export default class CategoryController extends Controller {
         const categoryService = new CategoryService(this.conn)
 
         try {
-            const data = RequestService.validateAuthHeader(req)
-
-            if (data.userId != id) {
-                res.status(401).send({ error: "You can't create this category" })
-                return
-            }
+            const data = RequestService.validateAuthHeader(req.headers.authorization)
 
             const item = await categoryService.insert(data.userId, body)
 
@@ -90,7 +85,7 @@ export default class CategoryController extends Controller {
         try {
             const category = await categoryService.findByID(id)
 
-            const data = RequestService.validateAuthHeader(req)
+            const data = RequestService.validateAuthHeader(req.headers.authorization)
 
             if (data.userId != category.user_id) {
                 res.status(401).send({ error: "You can't update this category" })
@@ -114,7 +109,7 @@ export default class CategoryController extends Controller {
         const categoryService = new CategoryService(this.conn)
 
         try {
-            const data = RequestService.validateAuthHeader(req)
+            const data = RequestService.validateAuthHeader(req.headers.authorization)
 
             const category = await categoryService.findByID(id)
 

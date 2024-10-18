@@ -1,16 +1,19 @@
 import { Request, Response } from "express";
 import ItemService from "../services/ItemService";
 import Controller from "./Controller";
-import RequestService from "../services/RequestService";
+import RequestService, { AuthError } from "../services/RequestService";
 import { itemCreateSchema, itemUpdateSchema, ItemCreateSchema, ItemUpdateSchema } from "../schemas/itemSchema";
 
 export default class ItemController extends Controller {
     protected assignRoutes(): void {
         this.router.get('/items', this.getAll.bind(this))
+        this.router.get('/items/standalone', this.getAllWithNoCategory.bind(this))
         this.router.get('/items/:id', this.getOne.bind(this))
         this.router.get('/users/:id/items', this.getAllFromStock.bind(this))
+        this.router.get('/users/:id/items/standalone', this.getAllWithNoCategoryByUser.bind(this))
+        this.router.get('/categories/:id/items', this.getAllFromCategory.bind(this))
 
-        this.router.post('/users/:id/items',
+        this.router.post('/items',
             [RequestService.validateBody(itemCreateSchema)],
             this.create.bind(this))
 
@@ -30,11 +33,40 @@ export default class ItemController extends Controller {
         return
     }
 
+    private async getAllWithNoCategory(req: Request, res: Response) {
+        const itemService = new ItemService(this.conn)
+
+        const categories = await itemService.findAllWithNoCategory()
+
+        res.send(categories)
+        return
+    }
+
+    private async getAllWithNoCategoryByUser(req: Request, res: Response) {
+        const id = +req.params.id
+        const itemService = new ItemService(this.conn)
+
+        const categories = await itemService.findAllWithNoCategory(id)
+
+        res.send(categories)
+        return
+    }
+
     private async getAllFromStock(req: Request, res: Response) {
         const id = +req.params.id
         const itemService = new ItemService(this.conn)
 
-        const categories = await itemService.findAllByStockId(id)
+        const categories = await itemService.findAllByUser(id)
+
+        res.send(categories)
+        return
+    }
+
+    private async getAllFromCategory(req: Request, res: Response) {
+        const id = +req.params.id
+        const itemService = new ItemService(this.conn)
+
+        const categories = await itemService.findAllByCategory(id)
 
         res.send(categories)
         return
@@ -55,26 +87,28 @@ export default class ItemController extends Controller {
         }
     }
 
+
+
     private async create(req: Request, res: Response) {
-        const id = +req.params.id
         const body: ItemCreateSchema = req.body
 
         const itemService = new ItemService(this.conn)
 
         try {
-            const data = RequestService.validateAuthHeader(req)
+            const data = RequestService.validateAuthHeader(req.headers.authorization)
 
-            if (data.userId != id) {
-                res.status(401).send({ error: "You can't create this item" })
-                return
-            }
-
-            const item = await itemService.insert(data.userId, body)
+            // see
+            const item = await itemService.insert(data.userId, body, data.employeeId)
 
             res.status(201).send(item)
             return
         } catch (err) {
-            console.log("Error on item creation: ", err)
+            if (err instanceof AuthError) {
+                res.status(401).send({ error: err.message })
+                return
+            }
+
+            console.log(err)
             res.status(400).send({ error: "Error on item creation" })
             return
         }
@@ -89,7 +123,7 @@ export default class ItemController extends Controller {
         try {
             const item = await itemService.findByID(id)
 
-            const data = RequestService.validateAuthHeader(req)
+            const data = RequestService.validateAuthHeader(req.headers.authorization)
 
             if (data.userId != item.user_id) {
                 res.status(401).send({ error: "You can't update this item" })
@@ -101,7 +135,12 @@ export default class ItemController extends Controller {
             res.status(200).send(newItem)
             return
         } catch (err) {
-            console.log("Error on item update: ", err)
+            if (err instanceof AuthError) {
+                res.status(401).send({ error: err.message })
+                return
+            }
+
+            console.error(err)
             res.status(400).send({ error: "Error on item update" })
             return
         }
@@ -113,13 +152,13 @@ export default class ItemController extends Controller {
         const itemService = new ItemService(this.conn)
 
         try {
-            const data = RequestService.validateAuthHeader(req)
+            const data = RequestService.validateAuthHeader(req.headers.authorization)
 
             const item = await itemService.findByID(id)
 
             if (item.user_id != data.userId) {
                 res.status(401).send({ error: "You can't delete this item" })
-                throw new Error()
+                return
             }
 
             await itemService.delete(id)
@@ -127,7 +166,12 @@ export default class ItemController extends Controller {
             res.status(200).send(item)
             return
         } catch (err) {
-            console.log("Error on item delete: ", err)
+            if (err instanceof AuthError) {
+                res.status(401).send({ error: err.message })
+                return
+            }
+
+            console.error(err)
             res.status(400).send({ error: "Error on delete item" })
             return
         }
