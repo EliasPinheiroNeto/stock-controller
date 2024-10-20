@@ -1,6 +1,6 @@
 services:
   database:
-    container_name: database
+    container_name: guardai-database
     image: postgres:16-alpine
     volumes:
       - ./data:/var/lib/postgresql/data

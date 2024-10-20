@@ -57,7 +57,6 @@ export default class CategoryController extends Controller {
     }
 
     private async create(req: Request, res: Response) {
-        const id = +req.params.id
         const body: CategoryCreateSchema = req.body
 
         const categoryService = new CategoryService(this.conn)
@@ -65,7 +64,7 @@ export default class CategoryController extends Controller {
         try {
             const data = RequestService.validateAuthHeader(req.headers.authorization)
 
-            const item = await categoryService.insert(data.userId, body)
+            const item = await categoryService.insert(data.userId, body, data.employeeId)
 
             res.status(201).send(item)
             return
@@ -92,7 +91,7 @@ export default class CategoryController extends Controller {
                 return
             }
 
-            const newCategory = await categoryService.update(id, body)
+            const newCategory = await categoryService.update(id, body, data.employeeId)
 
             res.status(200).send(newCategory)
             return
@@ -118,7 +117,7 @@ export default class CategoryController extends Controller {
                 throw new Error()
             }
 
-            await categoryService.delete(id)
+            await categoryService.delete(id, data.employeeId)
 
             res.status(200).send(category)
             return

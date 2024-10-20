@@ -108,10 +108,55 @@ CREATE TABLE IF NOT EXISTS stock_movements (
         ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS feed_type (
+    id SERIAL PRIMARY KEY,
+    type VARCHAR(6) NOT NULL UNIQUE
+);
+
+
+CREATE TABLE IF NOT EXISTS feed (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    feed_type_id INT NOT NULL,
+    user_id INT NOT NULL,
+    employee_id INT,
+    item_id INT,
+    category_id INT,
+    movement_id INT,
+    description VARCHAR(512),
+
+    CONSTRAINT fk_feed_type_feed FOREIGN KEY (feed_type_id)
+        REFERENCES feed_type(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_user_feed FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_employee_feed FOREIGN KEY (employee_id)
+        REFERENCES employees(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_item_feed FOREIGN KEY (item_id)
+        REFERENCES items(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_category_feed FOREIGN KEY (category_id)
+        REFERENCES categories(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_movement_feed FOREIGN KEY (movement_id)
+        REFERENCES stock_movements(id)
+        ON DELETE CASCADE
+);
+
 -- Inserir valores na tabela movement_type
 INSERT INTO movement_type(type)
 VALUES ('IN'), ('OUT');
 
+-- Inserir valores na tabela feed_type
+INSERT INTO feed_type(type)
+VALUES ('CREATE'), ('UPDATE'), ('DELETE');
 
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()

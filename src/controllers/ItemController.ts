@@ -130,7 +130,7 @@ export default class ItemController extends Controller {
                 return
             }
 
-            const newItem = await itemService.update(id, body)
+            const newItem = await itemService.update(id, body, data.employeeId)
 
             res.status(200).send(newItem)
             return
@@ -161,7 +161,7 @@ export default class ItemController extends Controller {
                 return
             }
 
-            await itemService.delete(id)
+            await itemService.delete(id, data.employeeId)
 
             res.status(200).send(item)
             return

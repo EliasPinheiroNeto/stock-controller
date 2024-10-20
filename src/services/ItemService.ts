@@ -114,10 +114,16 @@ export default class ItemService {
             `, [item.rows[0].id, id])
         })
 
+        // Cria o feed
+        await this.conn.query(`--sql
+            INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description)
+            VALUES ($1, $2, $3, $4, $5)
+        `, [user_id, employee_id, 1, item.rows[0].id, item.rows[0].description])
+
         return item.rows[0]
     }
 
-    public async update(id: number, data: ItemUpdateSchema) {
+    public async update(id: number, data: ItemUpdateSchema, employee_id?: number) {
         // Atualizando propriedades base do item
         const setClauses: string[] = [];
         const values: any[] = [id];
@@ -172,12 +178,18 @@ export default class ItemService {
             `, [item.rows[0].id, id])
         })
 
+        // Cria feed
+        await this.conn.query(`--sql
+            INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description)
+            VALUES ($1, $2, $3, $4, $5)
+        `, [item.rows[0].user_id, employee_id, 2, id, item.rows[0].description])
+
         return item.rows[0]
     }
 
 
 
-    public async delete(id: number) {
+    public async delete(id: number, employee_id?: number) {
         const result = await this.conn.query<ItemSchema>(`--sql
             DELETE FROM items
             WHERE id = $1
@@ -187,6 +199,12 @@ export default class ItemService {
         if (result.rowCount == 0) {
             throw new Error("Item not found")
         }
+
+        // Cria feed
+        await this.conn.query(`--sql
+            INSERT INTO feed(user_id, employee_id, feed_type_id, item_id)
+            VALUES ($1, $2, $3, $4)
+        `, [result.rows[0].user_id, employee_id, 3, id])
 
         return result.rows[0]
     }
