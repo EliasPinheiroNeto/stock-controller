@@ -11,15 +11,7 @@ export default class ItemService {
 
     public async findAll() {
         const result = await this.conn.query<ItemSchema>(`--sql
-            SELECT
-                id,
-                name,
-                description,
-                user_id,
-                employee_id,
-                created_at,
-                updated_at,
-                stock
+            SELECT *
             FROM items
         `)
 
@@ -40,15 +32,7 @@ export default class ItemService {
 
     public async findAllByUser(id: number) {
         const result = await this.conn.query<ItemSchema>(`--sql
-            SELECT
-                id,
-                name,
-                description,
-                user_id,
-                employee_id,
-                created_at,
-                updated_at,
-                stock
+            SELECT *
             FROM items
             WHERE user_id = $1
         `, [id])
@@ -58,8 +42,7 @@ export default class ItemService {
 
     public async findAllByCategory(id: number) {
         const result = await this.conn.query<ItemSchema>(`--sql
-            SELECT
-                i.*
+            SELECT i.*
             FROM item_category ic
             JOIN items i ON i.id = ic.item_id
             WHERE ic.category_id = $1
@@ -70,15 +53,7 @@ export default class ItemService {
 
     public async findByID(id: number) {
         const result = await this.conn.query<ItemSchema>(`--sql
-            SELECT
-                id,
-                name,
-                description,
-                user_id,
-                employee_id,
-                created_at,
-                updated_at,
-                stock
+            SELECT *
             FROM items
             WHERE id = $1
         `, [id])
@@ -91,12 +66,23 @@ export default class ItemService {
     }
 
     public async insert(user_id: number, data: ItemCreateSchema, employee_id?: number) {
+        // Verifica se o SKU já existe para esse usuário
+        const sku = await this.conn.query<ItemSchema>(`--sql
+            SELECT *
+            FROM items
+            WHERE user_id = $1 AND sku = $2
+        `, [user_id, data.sku])
+
+        if (sku.rowCount !== null && sku.rowCount > 0) {
+            throw new Error("SKU already exists")
+        }
+
         // Cria o Item
         const item = await this.conn.query<ItemSchema>(`--sql
-            INSERT INTO items(user_id, name, description, employee_id)
+            INSERT INTO items(user_id, name, description, employee_id, sku)
             VALUES ($1, $2, $3, $4)
             RETURNING *
-        `, [user_id, data.name, data.description, employee_id])
+        `, [user_id, data.name, data.description, employee_id, data.sku])
 
         // Encontra as categorias para ligar
         const categories = await this.conn.query<{ id: number }>(`--sql
@@ -116,14 +102,26 @@ export default class ItemService {
 
         // Cria o feed
         await this.conn.query(`--sql
-            INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description)
-            VALUES ($1, $2, $3, $4, $5)
-        `, [user_id, employee_id, 1, item.rows[0].id, item.rows[0].description])
+            INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description, name)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [user_id, employee_id, 1, item.rows[0].id, item.rows[0].description, item.rows[0].name])
 
         return item.rows[0]
     }
 
     public async update(id: number, data: ItemUpdateSchema, employee_id?: number) {
+        // Verifica se o item existe
+        const item = await this.conn.query<ItemSchema>(`--sql
+            SELECT *
+            FROM items
+            WHERE id = $1
+        `, [id])
+
+        if (item.rowCount == 0) {
+            throw new Error("Item not found")
+        }
+
+
         // Atualizando propriedades base do item
         const setClauses: string[] = [];
         const values: any[] = [id];
@@ -138,11 +136,28 @@ export default class ItemService {
             values.push(data.description);
         }
 
+        // Verifica se o SKU já existe para esse usuário
+        if (data.sku) {
+            const sku = await this.conn.query<ItemSchema>(`--sql
+                SELECT *
+                FROM items
+                WHERE user_id = $1 AND sku = $2
+            `, [item.rows[0].user_id, data.sku])
+
+            if (sku.rowCount !== null && sku.rowCount > 0) {
+                throw new Error("SKU already exists")
+            }
+
+            setClauses.push(`sku = $${values.length + 1}`);
+            values.push(data.sku);
+        }
+
         if (!data.category_ids && setClauses.length == 0) {
             return {}
         }
 
-        const item = await this.conn.query<ItemSchema>(`--sql
+
+        const result = await this.conn.query<ItemSchema>(`--sql
             UPDATE items
             SET ${setClauses.join(', ')}
             WHERE id = $1
@@ -180,11 +195,11 @@ export default class ItemService {
 
         // Cria feed
         await this.conn.query(`--sql
-            INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description)
-            VALUES ($1, $2, $3, $4, $5)
-        `, [item.rows[0].user_id, employee_id, 2, id, item.rows[0].description])
+            INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description, name)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [item.rows[0].user_id, employee_id, 2, id, item.rows[0].description, item.rows[0].name])
 
-        return item.rows[0]
+        return result.rows[0]
     }
 
 

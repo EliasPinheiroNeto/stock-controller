@@ -12,6 +12,7 @@ export default class FeedService {
         const result = await this.conn.query<FeedSchema>(`--sql
             SELECT *
             FROM feed
+            ORDER BY created_at DESC
         `)
 
         return result.rows
@@ -22,6 +23,7 @@ export default class FeedService {
             SELECT *
             FROM feed
             WHERE id = $1
+            ORDER BY created_at DESC
         `, [id])
 
         if (result.rowCount == 0) {
@@ -36,6 +38,7 @@ export default class FeedService {
             SELECT *
             FROM feed
             WHERE user_id = $1
+            ORDER BY created_at DESC
         `, [userId])
 
         return result.rows
@@ -46,6 +49,7 @@ export default class FeedService {
             SELECT *
             FROM feed
             WHERE employee_id = $1
+            ORDER BY created_at DESC
         `, [employeeId])
 
         return result.rows
@@ -56,6 +60,7 @@ export default class FeedService {
             SELECT *
             FROM feed
             WHERE item_id = $1
+            ORDER BY created_at DESC
         `, [itemId])
 
         return result.rows
@@ -66,18 +71,9 @@ export default class FeedService {
             SELECT *
             FROM feed
             WHERE category_id = $1
+            ORDER BY created_at DESC
         `, [categoryId])
 
         return result.rows
-    }
-
-    public async insert(data: FeedSchema) {
-        const result = await this.conn.query<FeedSchema>(`--sql
-            INSERT INTO feed(created_at, user_id, employee_id, feed_type_id, item_id, category_id, movement_id, description)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING *
-        `, [data.created_at, data.user_id, data.employee_id, data.feed_type_id, data.item_id, data.category_id, data.movement_id, data.description])
-
-        return result.rows[0]
     }
 }

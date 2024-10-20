@@ -50,9 +50,9 @@ export default class CategoryService {
 
         // Cria feed
         await this.conn.query(`--sql
-            INSERT INTO feed(user_id, employee_id, feed_type_id, category_id, description)
-            VALUES ($1, $2, $3, $4, $5)
-        `, [user_id, employee_id, 1, result.rows[0].id, result.rows[0].description])
+            INSERT INTO feed(user_id, employee_id, feed_type_id, category_id, description, name)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [user_id, employee_id, 1, result.rows[0].id, result.rows[0].description, result.rows[0].name])
 
         return result.rows[0]
     }
@@ -86,9 +86,9 @@ export default class CategoryService {
 
         // Cria feed
         await this.conn.query(`--sql
-            INSERT INTO feed(user_id, employee_id, feed_type_id, category_id, description)
-            VALUES ($1, $2, $3, $4, $5)
-        `, [result.rows[0].user_id, employee_id, 2, result.rows[0].id, result.rows[0].description])
+            INSERT INTO feed(user_id, employee_id, feed_type_id, category_id, description, name)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [result.rows[0].user_id, employee_id, 2, result.rows[0].id, result.rows[0].description, result.rows[0].name])
 
         return result.rows[0]
     }
@@ -107,7 +107,7 @@ export default class CategoryService {
         // Cria feed
         await this.conn.query(`--sql
             INSERT INTO feed(user_id, employee_id, feed_type_id, category_id)
-            VALUES ($1, $2, $3, $4, $5)
+            VALUES ($1, $2, $3, $4)
         `, [result.rows[0].user_id, employee_id, 3, result.rows[0].id])
 
         return result.rows[0]

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS employees (
 
 CREATE TABLE IF NOT EXISTS items (
     id SERIAL PRIMARY KEY,
+    SKU VARCHAR(128) NOT NULL,
     name VARCHAR(256) NOT NULL,
     description VARCHAR(512),
     stock INT DEFAULT 0,
@@ -124,6 +125,7 @@ CREATE TABLE IF NOT EXISTS feed (
     category_id INT,
     movement_id INT,
     description VARCHAR(512),
+    name VARCHAR(128),
 
     CONSTRAINT fk_feed_type_feed FOREIGN KEY (feed_type_id)
         REFERENCES feed_type(id)

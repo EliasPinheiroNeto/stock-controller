@@ -11,6 +11,7 @@ export const feedSchema = z.object({
     category_id: z.number().optional(),
     movement_id: z.number().optional(),
     description: z.string().optional(),
+    name: z.string().optional(),
 })
 
 export type FeedSchema = z.infer<typeof feedSchema>
