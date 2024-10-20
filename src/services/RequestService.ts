@@ -4,14 +4,6 @@ import AuthService from "./AuthService";
 import ApplicationError from "../applicationError";
 
 
-export class AuthError extends Error {
-    constructor(message: string) {
-        super(message)
-        this.name = "AuthError"
-    }
-}
-
-
 export default class RequestService {
     static validateBody(schema: AnyZodObject) {
         return function (req: Request, res: Response, next: NextFunction) {

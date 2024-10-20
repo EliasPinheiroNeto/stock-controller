@@ -1,14 +1,10 @@
-import { Pool } from "pg";
 import { ItemCreateSchema, ItemSchema, ItemUpdateSchema } from "../schemas/itemSchema";
 import { CategorySchema } from "../schemas/categorySchema";
+import DatabaseService from "./DatabaseService";
+import ApplicationError from "../applicationError";
+import { DatabaseError } from "pg";
 
-export default class ItemService {
-    private conn: Pool
-
-    constructor(conn: Pool) {
-        this.conn = conn
-    }
-
+export default class ItemService extends DatabaseService {
     public async findAll() {
         const result = await this.conn.query<ItemSchema>(`--sql
             SELECT *
@@ -59,7 +55,11 @@ export default class ItemService {
         `, [id])
 
         if (result.rowCount == 0) {
-            throw new Error("Item not found")
+            throw new ApplicationError("Item not found", {
+                status: 404,
+                errorCode: "NOT_FOUND",
+                message: "Item não encontrado"
+            })
         }
 
         return result.rows[0]
@@ -74,39 +74,56 @@ export default class ItemService {
         `, [user_id, data.sku])
 
         if (sku.rowCount !== null && sku.rowCount > 0) {
-            throw new Error("SKU already exists")
+            throw new ApplicationError("SKU already exists", {
+                status: 400,
+                errorCode: "INVALID_DATA",
+                message: "SKU já existe"
+            })
         }
 
-        // Cria o Item
-        const item = await this.conn.query<ItemSchema>(`--sql
-            INSERT INTO items(user_id, name, description, employee_id, sku)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *
-        `, [user_id, data.name, data.description, employee_id, data.sku])
+        try {
+            // Cria o Item
+            const item = await this.conn.query<ItemSchema>(`--sql
+                INSERT INTO items(user_id, name, description, employee_id, sku)
+                VALUES ($1, $2, $3, $4)
+                RETURNING *
+            `, [user_id, data.name, data.description, employee_id, data.sku])
 
-        // Encontra as categorias para ligar
-        const categories = await this.conn.query<{ id: number }>(`--sql
-            SELECT id
-            FROM categories
-            WHERE user_id = $1 AND id IN ($2)
-        `, [user_id, data.category_ids?.join(', ')])
+            // Encontra as categorias para ligar
+            const categories = await this.conn.query<{ id: number }>(`--sql
+                SELECT id
+                FROM categories
+                WHERE user_id = $1 AND id IN ($2)
+            `, [user_id, data.category_ids?.join(', ')])
 
 
-        // Cria a ligação com a categoria
-        categories.rows.forEach(async id => {
+            // Cria a ligação com a categoria
+            categories.rows.forEach(async id => {
+                await this.conn.query(`--sql
+                    INSERT INTO item_category(item_id, category_id)
+                    VALUES($1, $2)    
+                `, [item.rows[0].id, id])
+            })
+
+            // Cria o feed
             await this.conn.query(`--sql
-                INSERT INTO item_category(item_id, category_id)
-                VALUES($1, $2)    
-            `, [item.rows[0].id, id])
-        })
+                INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description, name)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            `, [user_id, employee_id, 1, item.rows[0].id, item.rows[0].description, item.rows[0].name])
 
-        // Cria o feed
-        await this.conn.query(`--sql
-            INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description, name)
-            VALUES ($1, $2, $3, $4, $5, $6)
-        `, [user_id, employee_id, 1, item.rows[0].id, item.rows[0].description, item.rows[0].name])
+            return item.rows[0]
+        } catch (err) {
+            if (err instanceof DatabaseError) {
+                console.error(err)
+                throw new ApplicationError("Error on inserting item", {
+                    status: 500,
+                    errorCode: "DATABASE_ERROR",
+                    message: "Erro interno"
+                })
+            }
 
-        return item.rows[0]
+            throw err
+        }
     }
 
     public async update(id: number, data: ItemUpdateSchema, employee_id?: number) {
@@ -118,7 +135,11 @@ export default class ItemService {
         `, [id])
 
         if (item.rowCount == 0) {
-            throw new Error("Item not found")
+            throw new ApplicationError("Item not found", {
+                status: 404,
+                errorCode: "NOT_FOUND",
+                message: "Item não encontrado"
+            })
         }
 
 
@@ -145,7 +166,11 @@ export default class ItemService {
             `, [item.rows[0].user_id, data.sku])
 
             if (sku.rowCount !== null && sku.rowCount > 0) {
-                throw new Error("SKU already exists")
+                throw new ApplicationError("SKU already exists", {
+                    status: 400,
+                    errorCode: "INVALID_DATA",
+                    message: "SKU já existe"
+                })
             }
 
             setClauses.push(`sku = $${values.length + 1}`);
@@ -165,41 +190,53 @@ export default class ItemService {
         `, values);
 
 
+        try {
+            // Atualizando as ligações com as categorias
+            if (!data.category_ids) {
+                return item.rows[0]
+            }
 
-        // Atualizando as ligações com as categorias
-        if (!data.category_ids) {
-            return item.rows[0]
-        }
-
-        // Deleta ligações
-        await this.conn.query(`--sql
-            DELETE FROM item_category
-            WHERE item_id = $1 AND category_id NOT IN ($2)    
-        `, [id, data.category_ids.join(', ')])
-
-        const references = await this.conn.query<{ id: number, item_id: number, category_id: number }>(`--sql
-            SELECT category_id FROM item_category
-            WHERE item_id = $1    
-        `, [id])
-
-        // Verifica as categorias que existem
-        const n = references.rows.filter(e => !(data.category_ids?.includes(e.id)))
-
-        // Cria as as ligações
-        n.forEach(async id => {
+            // Deleta ligações
             await this.conn.query(`--sql
-                INSERT INTO item_category(item_id, category_id)
-                VALUES($1, $2)    
-            `, [item.rows[0].id, id])
-        })
+                DELETE FROM item_category
+                WHERE item_id = $1 AND category_id NOT IN ($2)    
+            `, [id, data.category_ids.join(', ')])
 
-        // Cria feed
-        await this.conn.query(`--sql
-            INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description, name)
-            VALUES ($1, $2, $3, $4, $5, $6)
-        `, [item.rows[0].user_id, employee_id, 2, id, item.rows[0].description, item.rows[0].name])
+            const references = await this.conn.query<{ id: number, item_id: number, category_id: number }>(`--sql
+                SELECT category_id FROM item_category
+                WHERE item_id = $1    
+            `, [id])
 
-        return result.rows[0]
+            // Verifica as categorias que existem
+            const n = references.rows.filter(e => !(data.category_ids?.includes(e.id)))
+
+            // Cria as as ligações
+            n.forEach(async id => {
+                await this.conn.query(`--sql
+                    INSERT INTO item_category(item_id, category_id)
+                    VALUES($1, $2)    
+                `, [item.rows[0].id, id])
+            })
+
+            // Cria feed
+            await this.conn.query(`--sql
+                INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description, name)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            `, [item.rows[0].user_id, employee_id, 2, id, item.rows[0].description, item.rows[0].name])
+
+            return result.rows[0]
+        } catch (err) {
+            if (err instanceof DatabaseError) {
+                console.error(err)
+                throw new ApplicationError("Error on updating item", {
+                    status: 500,
+                    errorCode: "DATABASE_ERROR",
+                    message: "Erro interno"
+                })
+            }
+
+            throw err
+        }
     }
 
 
@@ -212,7 +249,11 @@ export default class ItemService {
         `, [id]);
 
         if (result.rowCount == 0) {
-            throw new Error("Item not found")
+            throw new ApplicationError("Item not found", {
+                status: 404,
+                errorCode: "NOT_FOUND",
+                message: "Item não encontrado"
+            })
         }
 
         // Cria feed

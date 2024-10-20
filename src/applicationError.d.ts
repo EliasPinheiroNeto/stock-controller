@@ -14,6 +14,7 @@ export default class ApplicationError extends Error {
         super(message)
         this.response = props.response
 
+        this.name = "ApplicationError"
         Object.setPrototypeOf(this, ApplicationError.prototype)
     }
 }

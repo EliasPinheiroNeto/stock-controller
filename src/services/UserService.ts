@@ -1,4 +1,4 @@
-import { DatabaseError, Pool } from "pg";
+import { DatabaseError } from "pg";
 import { UserCreateSchema, UserFullSchema, UserLoginSchema, UserSchema, UserUpdateSchema } from "../schemas/userSchema";
 import AuthService from "./AuthService";
 import ApplicationError from "../applicationError";
