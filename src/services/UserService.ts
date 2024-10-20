@@ -3,6 +3,7 @@ import { UserCreateSchema, UserFullSchema, UserLoginSchema, UserSchema, UserUpda
 import AuthService from "./AuthService";
 import ApplicationError from "../applicationError";
 import DatabaseService from "./DatabaseService";
+import { error } from "console";
 
 export default class UserService extends DatabaseService {
     public async findAll() {
@@ -45,6 +46,15 @@ export default class UserService extends DatabaseService {
             return result.rows[0]
         } catch (err) {
             if (err instanceof DatabaseError) {
+                if (err.code == '23505') {
+                    throw new ApplicationError("Error on inserting user", {
+                        status: 400,
+                        errorCode: "INVALID_DATA",
+                        message: "Email já cadastrado",
+                        details: err.detail
+                    })
+                }
+
                 console.error(err)
 
                 throw new ApplicationError("Error on inserting user", {

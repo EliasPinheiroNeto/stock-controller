@@ -5,7 +5,7 @@ export const movementSchema = z.object({
     user_id: z.number(),
     employee_id: z.number().optional(),
     item_id: z.number(),
-    movement_type: z.enum(["IN", "OUT"]),
+    movement_type: z.enum(["IN", "OUT"]), // TODO: aceitar tanto string quanto number e transformar os dados
     quantity: z.number(),
     created_at: z.date()
 }).strict()

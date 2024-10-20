@@ -85,7 +85,7 @@ export default class ItemService extends DatabaseService {
             // Cria o Item
             const item = await this.conn.query<ItemSchema>(`--sql
                 INSERT INTO items(user_id, name, description, employee_id, sku)
-                VALUES ($1, $2, $3, $4)
+                VALUES ($1, $2, $3, $4, $5)
                 RETURNING *
             `, [user_id, data.name, data.description, employee_id, data.sku])
 
@@ -118,7 +118,8 @@ export default class ItemService extends DatabaseService {
                 throw new ApplicationError("Error on inserting item", {
                     status: 500,
                     errorCode: "DATABASE_ERROR",
-                    message: "Erro interno"
+                    message: "Erro interno",
+                    details: err.detail
                 })
             }
 
@@ -142,20 +143,8 @@ export default class ItemService extends DatabaseService {
             })
         }
 
-
-        // Atualizando propriedades base do item
         const setClauses: string[] = [];
         const values: any[] = [id];
-
-        if (data.name) {
-            setClauses.push(`name = $${values.length + 1}`);
-            values.push(data.name);
-        }
-
-        if (data.description) {
-            setClauses.push(`name = $${values.length + 1}`);
-            values.push(data.description);
-        }
 
         // Verifica se o SKU já existe para esse usuário
         if (data.sku) {
@@ -177,52 +166,85 @@ export default class ItemService extends DatabaseService {
             values.push(data.sku);
         }
 
-        if (!data.category_ids && setClauses.length == 0) {
-            return {}
+        // Atualizando propriedades base do item
+        if (data.name) {
+            setClauses.push(`name = $${values.length + 1}`);
+            values.push(data.name);
+        }
+
+        if (data.description) {
+            setClauses.push(`name = $${values.length + 1}`);
+            values.push(data.description);
         }
 
 
-        const result = await this.conn.query<ItemSchema>(`--sql
-            UPDATE items
-            SET ${setClauses.join(', ')}
-            WHERE id = $1
-            RETURNING *
-        `, values);
-
-
         try {
-            // Atualizando as ligações com as categorias
-            if (!data.category_ids) {
-                return item.rows[0]
+            if (data.category_ids) {
+                // Deleta ligações
+                if (data.category_ids.length == 0) {
+                    await this.conn.query(`--sql
+                        DELETE FROM item_category
+                        WHERE item_id = $1
+                    `, [id])
+                } else {
+                    await this.conn.query(`--sql
+                        DELETE FROM item_category
+                        WHERE item_id = $1 AND category_id NOT IN (${data.category_ids.join(', ')})    
+                    `, [id])
+                }
+
+
+                const references = await this.conn.query<{ category_id: number }>(`--sql
+                    SELECT category_id FROM item_category
+                    WHERE item_id = $1    
+                `, [id])
+
+                // Verifica as categorias que existem
+                const n = data.category_ids.filter(e => !(references.rows.map(e => e.category_id).includes(e)))
+
+                console.log(n)
+                // Cria as as ligações
+                n.forEach(async id => {
+                    await this.conn.query(`--sql
+                        INSERT INTO item_category(item_id, category_id)
+                        VALUES($1, $2)    
+                    `, [item.rows[0].id, id])
+                })
+
+                // Cria feed
+                await this.conn.query(`--sql
+                    INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description, name)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                `, [item.rows[0].user_id, employee_id, 2, id, item.rows[0].description, item.rows[0].name])
+            }
+        } catch (err) {
+            if (err instanceof DatabaseError) {
+                console.error(err)
+
+                throw new ApplicationError("Error on updating item", {
+                    status: 500,
+                    errorCode: "DATABASE_ERROR",
+                    message: "Erro interno",
+                    details: err.detail
+                })
             }
 
-            // Deleta ligações
-            await this.conn.query(`--sql
-                DELETE FROM item_category
-                WHERE item_id = $1 AND category_id NOT IN ($2)    
-            `, [id, data.category_ids.join(', ')])
+            throw err
+        }
 
-            const references = await this.conn.query<{ id: number, item_id: number, category_id: number }>(`--sql
-                SELECT category_id FROM item_category
-                WHERE item_id = $1    
-            `, [id])
 
-            // Verifica as categorias que existem
-            const n = references.rows.filter(e => !(data.category_ids?.includes(e.id)))
+        if (setClauses.length == 0) {
+            return {}
+        }
 
-            // Cria as as ligações
-            n.forEach(async id => {
-                await this.conn.query(`--sql
-                    INSERT INTO item_category(item_id, category_id)
-                    VALUES($1, $2)    
-                `, [item.rows[0].id, id])
-            })
+        try {
 
-            // Cria feed
-            await this.conn.query(`--sql
-                INSERT INTO feed(user_id, employee_id, feed_type_id, item_id, description, name)
-                VALUES ($1, $2, $3, $4, $5, $6)
-            `, [item.rows[0].user_id, employee_id, 2, id, item.rows[0].description, item.rows[0].name])
+            const result = await this.conn.query<ItemSchema>(`--sql
+                UPDATE items
+                SET ${setClauses.join(', ')}
+                WHERE id = $1
+                RETURNING *
+            `, values);
 
             return result.rows[0]
         } catch (err) {
@@ -231,7 +253,8 @@ export default class ItemService extends DatabaseService {
                 throw new ApplicationError("Error on updating item", {
                     status: 500,
                     errorCode: "DATABASE_ERROR",
-                    message: "Erro interno"
+                    message: "Erro interno",
+                    details: err.detail
                 })
             }
 
