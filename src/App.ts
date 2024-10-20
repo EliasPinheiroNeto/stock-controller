@@ -1,8 +1,9 @@
-import express, { Express } from 'express'
+import express, { Express, Request, Response, NextFunction } from 'express'
 import Controller from './controllers/Controller'
 import cors from 'cors'
 import { Pool } from 'pg'
 import fs from 'fs'
+import ApplicationError from './applicationError'
 
 
 interface ControllerConstructor {
@@ -82,6 +83,17 @@ export default class App {
             await this.initializeDatabase()
 
             this.initializeControllers()
+
+            this.express.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+                if (err instanceof ApplicationError) {
+                    res.status(err.response.status).send(err.response)
+                    return
+                }
+
+                console.error(err)
+                res.status(500).send({ error: "Internal error" })
+                return
+            })
 
             this.express.listen(port, () => {
                 console.log(`Application running at port: ${port}`)

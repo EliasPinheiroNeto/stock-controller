@@ -4,6 +4,7 @@ import { AnyZodObject, z } from "zod"
 import { promisify } from 'util';
 import { randomBytes, pbkdf2 as pbkdf2Callback } from 'crypto'
 import { tokenSchema, TokenSchema } from '../schemas/tokenSchema';
+import ApplicationError from '../applicationError';
 
 const pbkdf2 = promisify(pbkdf2Callback);
 
@@ -21,7 +22,11 @@ export default class AuthService {
 
             return tokenData
         } catch (err) {
-            throw new Error("invalid Token")
+            throw new ApplicationError("Invalid token", {
+                status: 401,
+                message: "Token inválido",
+                errorCode: "UNAUTHORIZED"
+            })
         }
     }
 
