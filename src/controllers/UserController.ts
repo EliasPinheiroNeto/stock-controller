@@ -81,7 +81,7 @@ export default class UserController extends Controller {
         try {
             const data = RequestService.validateAuthHeader(req.headers.authorization)
 
-            if (id != data.userId) {
+            if (id != data.userId || data.employeeId) {
                 throw new ApplicationError("Autorization error on update user", {
                     status: 401,
                     message: "Você não tem permissão para atualizar este usuário",
@@ -105,7 +105,7 @@ export default class UserController extends Controller {
         try {
             const data = RequestService.validateAuthHeader(req.headers.authorization)
 
-            if (id != data.userId) {
+            if (id != data.userId || data.employeeId) {
                 throw new ApplicationError("Autorization error on delete user", {
                     status: 401,
                     message: "Você não tem permissão para deletar este usuário",
@@ -131,7 +131,6 @@ export default class UserController extends Controller {
 
             const token = AuthService.generateToken({
                 userId: user.id,
-                email: user.email
             })
 
             res.send({

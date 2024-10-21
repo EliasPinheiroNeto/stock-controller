@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const employeeSchema = z.object({
     id: z.coerce.number(),
+    identity: z.string(),
     name: z.string(),
     user_id: z.number(),
     created_at: z.date(),
@@ -10,6 +11,7 @@ export const employeeSchema = z.object({
 
 export const employeeFullSchema = z.object({
     id: z.coerce.number(),
+    identity: z.string(),
     name: z.string(),
     user_id: z.number(),
     created_at: z.date(),
@@ -23,11 +25,12 @@ export const employeeCreateSchema = z.object({
 }).strict()
 
 export const employeeUpdateSchema = z.object({
-    name: z.string().optional()
+    name: z.string().optional(),
+    password: z.string().optional(),
 }).strict()
 
 export const employeeLoginSchema = z.object({
-    id: z.string(),
+    identity: z.string(),
     password: z.string()
 }).strict()
 

@@ -1,6 +1,7 @@
-import { Pool } from "pg";
+import { DatabaseError, Pool } from "pg";
 import AuthService from "./AuthService";
 import { EmployeeCreateSchema, EmployeeFullSchema, EmployeeLoginSchema, EmployeeSchema, EmployeeUpdateSchema } from "../schemas/employeeSchema";
+import ApplicationError from "../applicationError";
 
 export default class EmployeeService {
     private conn: Pool
@@ -16,7 +17,8 @@ export default class EmployeeService {
                 name,
                 user_id,
                 created_at,
-                updated_at
+                updated_at,
+                identity
             FROM employees
         `)
 
@@ -30,28 +32,53 @@ export default class EmployeeService {
                 name,
                 user_id,
                 created_at,
-                updated_at
+                updated_at,
+                identity
             FROM users
             WHERE id = $1
         `, [id])
 
         if (result.rowCount == 0) {
-            throw new Error()
+            throw new ApplicationError("Employee not found", {
+                status: 404,
+                errorCode: "NOT_FOUND",
+                message: "Funcionário não encontrado"
+            })
         }
 
         return result.rows[0]
     }
 
     public async insert(userId: number, data: EmployeeCreateSchema) {
-        const hashedPassword = await AuthService.hashPassword(data.password)
+        try {
+            const hashedPassword = await AuthService.hashPassword(data.password)
 
-        const result = await this.conn.query<EmployeeSchema>(`--sql
-            INSERT INTO employees(name, user_id, password)
-            VALUES ($1, $2, $3)
-            RETURNING id, name, user_id, created_at, updated_at
-        `, [data.name, userId, hashedPassword])
+            const nextval = await this.conn.query<{ nextval: number }>(`--sql
+                SELECT nextval('employees_id_seq') as nextval
+            `)
 
-        return result.rows[0]
+            const identity = AuthService.generateRandomIdentity(nextval.rows[0].nextval)
+
+            const result = await this.conn.query<EmployeeSchema>(`--sql
+                INSERT INTO employees(name, user_id, password, identity)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id, name, user_id, created_at, updated_at, identity;
+            `, [data.name, userId, hashedPassword, identity])
+
+            return result.rows[0]
+        } catch (err) {
+            if (err instanceof DatabaseError) {
+                console.error(err)
+                throw new ApplicationError("Error on inserting employee", {
+                    status: 500,
+                    errorCode: "DATABASE_ERROR",
+                    message: "Erro interno",
+                    details: err.detail
+                })
+            }
+
+            throw err
+        }
     }
 
     public async update(id: number, data: EmployeeUpdateSchema) {
@@ -67,16 +94,30 @@ export default class EmployeeService {
             return {}
         }
 
-        const query = `--sql
-            UPDATE employees
-            SET ${setClauses.join(', ')}
-            WHERE id = $1
-        RETURNING id, name, user_id, created_at, updated_at;
-        `;
+        try {
+            const query = `--sql
+                UPDATE employees
+                SET ${setClauses.join(', ')}
+                WHERE id = $1
+            RETURNING id, name, user_id, created_at, updated_at, identity
+            `;
 
-        const result = await this.conn.query<EmployeeSchema>(query, values);
+            const result = await this.conn.query<EmployeeSchema>(query, values);
 
-        return result.rows[0]
+            return result.rows[0]
+        } catch (err) {
+            if (err instanceof DatabaseError) {
+                console.error(err)
+                throw new ApplicationError("Error on update employee", {
+                    status: 500,
+                    errorCode: "DATABASE_ERROR",
+                    message: "Erro interno",
+                    details: err.detail
+                })
+            }
+
+            throw err
+        }
     }
 
     public async delete(id: number) {
@@ -87,7 +128,11 @@ export default class EmployeeService {
         `, [id]);
 
         if (result.rowCount == 0) {
-            throw new Error("Employee not found")
+            throw new ApplicationError("Employee not found", {
+                status: 404,
+                errorCode: "NOT_FOUND",
+                message: "Funcionário não encontrado"
+            })
         }
 
         return result.rows[0]
@@ -95,25 +140,27 @@ export default class EmployeeService {
 
     public async validateLogin(data: EmployeeLoginSchema) {
         const result = await this.conn.query<EmployeeFullSchema>(`--sql
-            SELECT
-                id,
-                name,
-                user_id,
-                password,
-                created_at,
-                updated_at
+            SELECT *
             FROM employees
-            WHERE id = $1
-        `, [data.id])
+            WHERE identity = $1
+        `, [data.identity])
 
         if (result.rowCount == 0) {
-            throw new Error()
+            throw new ApplicationError("Employee not found", {
+                status: 404,
+                errorCode: "NOT_FOUND",
+                message: "Funcionário não encontrado"
+            })
         }
 
         const { password, ...user } = result.rows[0]
 
         if (!(await AuthService.verifyPassword(data.password, password))) {
-            throw new Error()
+            throw new ApplicationError("Invalid password", {
+                status: 401,
+                errorCode: "UNAUTHORIZED",
+                message: "Senha inválida"
+            })
         }
 
         return user

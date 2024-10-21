@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken'
-import { AnyZodObject, z } from "zod"
 
 import { promisify } from 'util';
 import { randomBytes, pbkdf2 as pbkdf2Callback } from 'crypto'
@@ -40,5 +39,9 @@ export default class AuthService {
         const [salt, originalHash] = hash.split(':');
         const derivedKey = await pbkdf2(password, salt, 1000, 32, 'sha512');
         return derivedKey.toString('hex') === originalHash
+    }
+
+    static generateRandomIdentity(id: number) {
+        return `${id.toString().padStart(2, '0')}${randomBytes(4).toString('hex')}`
     }
 }

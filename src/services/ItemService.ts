@@ -202,7 +202,6 @@ export default class ItemService extends DatabaseService {
                 // Verifica as categorias que existem
                 const n = data.category_ids.filter(e => !(references.rows.map(e => e.category_id).includes(e)))
 
-                console.log(n)
                 // Cria as as ligações
                 n.forEach(async id => {
                     await this.conn.query(`--sql

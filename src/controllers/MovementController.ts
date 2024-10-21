@@ -14,34 +14,49 @@ export default class MovementController extends Controller {
 
     private async getAll(req: Request, res: Response) {
         const movementService = new MovementService(this.conn);
-        const result = await movementService.findAll();
-        res.send(result);
+
+        try {
+            const result = await movementService.findAll();
+            res.send(result);
+        } catch (err) {
+            this.errorHandler(err, res);
+        }
     }
 
     private async getAllByUser(req: Request, res: Response) {
         const id = +req.params.id;
         const movementService = new MovementService(this.conn);
-        const result = await movementService.findAllByUser(id);
-        res.send(result);
+
+        try {
+            const result = await movementService.findAllByUser(id);
+            res.send(result);
+        } catch (err) {
+            this.errorHandler(err, res);
+        }
     }
 
     private async getAllByItem(req: Request, res: Response) {
         const id = +req.params.id;
         const movementService = new MovementService(this.conn);
-        const result = await movementService.findAllByItem(id);
-        res.send(result);
+
+        try {
+            const result = await movementService.findAllByItem(id);
+            res.send(result);
+        } catch (err) {
+            this.errorHandler(err, res);
+        }
     }
 
     private async create(req: Request, res: Response) {
         const body: MovementCreateSchema = req.body;
         const movementService = new MovementService(this.conn);
+
         try {
             const data = RequestService.validateAuthHeader(req.headers.authorization);
-            const result = await movementService.insert(data.userId, body);
+            const result = await movementService.insert(data.userId, body, data.employeeId);
             res.status(201).send(result);
         } catch (err) {
-            console.error("Error on create Movement", err);
-            res.status(400).send({ error: "Error on create movement" });
+            this.errorHandler(err, res);
         }
     }
 }

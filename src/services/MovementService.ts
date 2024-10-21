@@ -1,48 +1,30 @@
-import { Pool } from "pg";
 import { MovementCreateSchema, MovementSchema } from "../schemas/movementSchema";
 import { ItemSchema } from "../schemas/itemSchema";
+import DatabaseService from "./DatabaseService";
+import { DatabaseError } from "pg";
+import ApplicationError from "../applicationError";
 
-export default class MovementService {
-  private conn: Pool;
-
-  constructor(conn: Pool) {
-    this.conn = conn;
-  }
+export default class MovementService extends DatabaseService {
 
   public async findAll() {
-    try {
-      const result = await this.conn.query<MovementSchema>(`SELECT * FROM stock_movements`);
-      return result.rows;
-    } catch (err) {
-      console.error("Error fetching all movements:", err);
-      return [];
-    }
+    const result = await this.conn.query<MovementSchema>(`SELECT * FROM stock_movements`);
+    return result.rows;
   }
 
   public async findAllByUser(userId: number) {
-    try {
-      const result = await this.conn.query<MovementSchema>(
-        `SELECT * FROM stock_movements WHERE user_id = $1`,
-        [userId]
-      );
-      return result.rows;
-    } catch (err) {
-      console.error(`Error fetching movements for user ${userId}:`, err);
-      return [];
-    }
+    const result = await this.conn.query<MovementSchema>(
+      `SELECT * FROM stock_movements WHERE user_id = $1`,
+      [userId]
+    );
+    return result.rows;
   }
 
   public async findAllByItem(id: number) {
-    try {
-      const result = await this.conn.query<MovementSchema>(
-        `SELECT * FROM stock_movements WHERE item_id = $1`,
-        [id]
-      );
-      return result.rows;
-    } catch (err) {
-      console.error(`Error fetching movements for item ${id}:`, err);
-      return [];
-    }
+    const result = await this.conn.query<MovementSchema>(
+      `SELECT * FROM stock_movements WHERE item_id = $1`,
+      [id]
+    );
+    return result.rows;
   }
 
   public async insert(userId: number, data: MovementCreateSchema, employee_id?: number) {
@@ -88,8 +70,17 @@ export default class MovementService {
 
       return result.rows;
     } catch (err) {
-      console.error("Error inserting movement:", err);
-      return [];
+      if (err instanceof DatabaseError) {
+        console.error(err)
+        throw new ApplicationError("Error on inserting moviment", {
+          status: 500,
+          errorCode: "DATABASE_ERROR",
+          message: "Erro interno",
+          details: err.detail
+        })
+      }
+
+      throw err
     }
   }
 }
