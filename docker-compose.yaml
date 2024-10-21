@@ -15,6 +15,19 @@ services:
       - POSTGRES_DB=guardai
       - TZ=America/Sao_Paulo
 
+  backend:
+    image: node:20.18.0-alpine
+    container_name: guardai-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - application
+    ports:
+      - "3000:3000"
+    depends_on:
+      - database
+
 networks:
   application:
     driver: bridge
