@@ -7,6 +7,7 @@ export const movementSchema = z.object({
     item_id: z.number(),
     movement_type: z.enum(["IN", "OUT"]), // TODO: aceitar tanto string quanto number e transformar os dados
     quantity: z.number(),
+    price: z.number(),
     created_at: z.date()
 }).strict()
 
@@ -15,7 +16,8 @@ export const movementCreateSchema = z.object({
     items: z.array(z.object({
         item_id: z.number(),
         movement_type: z.enum(["IN", "OUT"]),
-        quantity: z.number()
+        quantity: z.number(),
+        price: z.number()
     }).strict()).min(1)
 }).strict()
 

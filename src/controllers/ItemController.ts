@@ -4,6 +4,7 @@ import Controller from "./Controller";
 import RequestService from "../services/RequestService";
 import { itemCreateSchema, itemUpdateSchema, ItemCreateSchema, ItemUpdateSchema } from "../schemas/itemSchema";
 import ApplicationError from "../applicationError";
+import AccountingService from "../services/AccountingService";
 
 export default class ItemController extends Controller {
     protected assignRoutes(): void {
@@ -14,6 +15,10 @@ export default class ItemController extends Controller {
         this.router.get('/items/:id',
             [RequestService.validateNumberParam('id')],
             this.getOne.bind(this))
+
+        this.router.get('/items/:id/mediumPrice',
+            [RequestService.validateNumberParam('id')],
+            this.getMediumPrice.bind(this))
 
         this.router.get('/users/:id/items',
             [RequestService.validateNumberParam('id')],
@@ -190,6 +195,20 @@ export default class ItemController extends Controller {
             await itemService.delete(id, data.employeeId)
 
             res.status(200).send(item)
+            return
+        } catch (err) {
+            this.errorHandler(err, res)
+        }
+    }
+
+    private async getMediumPrice(req: Request, res: Response) {
+        const id = +req.params.id
+        const accountingService = new AccountingService(this.conn)
+
+        try {
+            const result = await accountingService.getMediumPrice(id)
+
+            res.send(result)
             return
         } catch (err) {
             this.errorHandler(err, res)

@@ -49,7 +49,7 @@ export default class MovementService extends DatabaseService {
           [stockResult.rows[0].stock + (movementType === 1 ? item.quantity : -item.quantity), item.item_id]
         );
 
-        return `(${userId}, ${item.item_id}, ${movementType}, ${item.quantity}${employee_id ? `, ${employee_id}` : ''})`;
+        return `(${userId}, ${item.item_id}, ${movementType}, ${item.quantity}${employee_id ? `, ${employee_id}` : ''}, ${item.price})`;
       }))).filter(Boolean);
 
       if (values.length === 0) {
@@ -57,7 +57,7 @@ export default class MovementService extends DatabaseService {
       }
 
       const result = await this.conn.query<ItemSchema>(
-        `INSERT INTO stock_movements(user_id, item_id, movement_type_id, quantity${employee_id ? ', employee_id' : ''})
+        `INSERT INTO stock_movements(user_id, item_id, movement_type_id, quantity${employee_id ? ', employee_id' : ''}, price)
          VALUES ${values.join(', ')}
          RETURNING *`
       );

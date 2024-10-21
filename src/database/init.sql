@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS stock_movements (
     item_id INT NOT NULL,
     employee_id INT,
     movement_type_id INT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
 
     CONSTRAINT fk_user_stock_movements FOREIGN KEY (user_id)
         REFERENCES users(id)
