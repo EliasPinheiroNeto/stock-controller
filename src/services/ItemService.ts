@@ -96,13 +96,12 @@ export default class ItemService extends DatabaseService {
                 WHERE user_id = $1 AND id IN ($2)
             `, [user_id, data.category_ids?.join(', ')])
 
-
             // Cria a ligação com a categoria
             categories.rows.forEach(async id => {
                 await this.conn.query(`--sql
                     INSERT INTO item_category(item_id, category_id)
                     VALUES($1, $2)    
-                `, [item.rows[0].id, id])
+                `, [item.rows[0].id, id.id])
             })
 
             // Cria o feed

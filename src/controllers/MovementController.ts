@@ -10,6 +10,7 @@ export default class MovementController extends Controller {
         this.router.get('/users/:id/movements', this.getAllByUser.bind(this));
         this.router.get('/items/:id/movements', this.getAllByItem.bind(this));
         this.router.post('/movements', [RequestService.validateBody(movementCreateSchema)], this.create.bind(this));
+        this.router.get('/movements/:id', [RequestService.validateNumberParam('id')], this.getById.bind(this));
     }
 
     private async getAll(req: Request, res: Response) {
@@ -17,6 +18,18 @@ export default class MovementController extends Controller {
 
         try {
             const result = await movementService.findAll();
+            res.send(result);
+        } catch (err) {
+            this.errorHandler(err, res);
+        }
+    }
+
+    private async getById(req: Request, res: Response) {
+        const id = +req.params.id;
+        const movementService = new MovementService(this.conn);
+
+        try {
+            const result = await movementService.findByID(id);
             res.send(result);
         } catch (err) {
             this.errorHandler(err, res);

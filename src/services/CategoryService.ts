@@ -101,7 +101,7 @@ export default class CategoryService {
         }
 
         if (data.description) {
-            setClauses.push(`name = $${values.length + 1}`);
+            setClauses.push(`description = $${values.length + 1}`);
             values.push(data.description);
         }
 
@@ -156,9 +156,11 @@ export default class CategoryService {
         try {
             // Cria feed
             await this.conn.query(`--sql
-                INSERT INTO feed(user_id, employee_id, feed_type_id, category_id)
+                INSERT INTO feed(user_id, employee_id, feed_type_id, message)
                 VALUES ($1, $2, $3, $4)
-            `, [result.rows[0].user_id, employee_id, 3, result.rows[0].id])
+            `, [result.rows[0].user_id, employee_id, 3,
+            `Deleteou a categoria ${result.rows[0].name}`
+            ])
 
             return result.rows[0]
         } catch (err) {

@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS feed (
     movement_id INT,
     description VARCHAR(512),
     name VARCHAR(128),
+    message VARCHAR(512),
 
     CONSTRAINT fk_feed_type_feed FOREIGN KEY (feed_type_id)
         REFERENCES feed_type(id)

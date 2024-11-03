@@ -11,6 +11,23 @@ export default class MovementService extends DatabaseService {
     return result.rows;
   }
 
+  public async findByID(id: number) {
+    const result = await this.conn.query<MovementSchema>(
+      `SELECT * FROM stock_movements WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      throw new ApplicationError("Movement not found", {
+        status: 404,
+        errorCode: "NOT_FOUND",
+        message: "Movimento não encontrado"
+      });
+    }
+
+    return result.rows[0];
+  }
+
   public async findAllByUser(userId: number) {
     const result = await this.conn.query<MovementSchema>(
       `SELECT * FROM stock_movements WHERE user_id = $1`,

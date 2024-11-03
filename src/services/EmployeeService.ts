@@ -34,7 +34,7 @@ export default class EmployeeService {
                 created_at,
                 updated_at,
                 identity
-            FROM users
+            FROM employees
             WHERE id = $1
         `, [id])
 

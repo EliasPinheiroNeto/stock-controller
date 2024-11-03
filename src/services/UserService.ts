@@ -143,7 +143,11 @@ export default class UserService extends DatabaseService {
             const { password, ...user } = result.rows[0]
 
             if (!(await AuthService.verifyPassword(data.password, password))) {
-                throw new Error()
+                throw new ApplicationError("Error on validating login", {
+                    status: 401,
+                    errorCode: "UNAUTHORIZED",
+                    message: "Senha incorreta"
+                })
             }
 
             return user
