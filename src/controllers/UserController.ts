@@ -66,7 +66,13 @@ export default class UserController extends Controller {
         try {
             const user = await userService.insert(body)
 
-            res.status(201).send(user)
+            const token = AuthService.generateToken({
+                userId: user.id,
+            })
+
+            res.status(201).send({
+                user, token
+            })
             return
         } catch (err) {
             this.errorHandler(err, res)

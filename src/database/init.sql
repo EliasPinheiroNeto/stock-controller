@@ -1,6 +1,7 @@
 SET TIME ZONE 'America/Sao_Paulo';
 
 CREATE TABLE IF NOT EXISTS users (
+    business_name VARCHAR(128) NOT NULL,
     id SERIAL PRIMARY KEY,
     name VARCHAR(128) NOT NULL,
     email VARCHAR(128) UNIQUE NOT NULL,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const userSchema = z.object({
+    business_name: z.string(),
     id: z.coerce.number(),
     name: z.string(),
     email: z.string(),
@@ -9,6 +10,7 @@ export const userSchema = z.object({
 })
 
 export const userFullSchema = z.object({
+    business_name: z.string(),
     id: z.coerce.number(),
     name: z.string(),
     email: z.string(),
@@ -18,12 +20,14 @@ export const userFullSchema = z.object({
 })
 
 export const userCreateSchema = z.object({
+    business_name: z.string(),
     name: z.string(),
     email: z.string().email(),
     password: z.string(),
 }).strict()
 
 export const userUpdateSchema = z.object({
+    business_name: z.string().optional(),
     name: z.string().optional()
 }).strict()
 

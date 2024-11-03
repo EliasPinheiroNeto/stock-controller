@@ -38,10 +38,10 @@ export default class UserService extends DatabaseService {
 
         try {
             const result = await this.conn.query<UserSchema>(`--sql
-                INSERT INTO users(name, email, password)
-                VALUES ($1, $2, $3)
-                RETURNING id, name, email, created_at, updated_at
-            `, [data.name, data.email, hashedPassword])
+                INSERT INTO users(name, email, password, business_name)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id, name, email, business_name, created_at, updated_at
+            `, [data.name, data.email, hashedPassword, data.business_name])
 
             return result.rows[0]
         } catch (err) {
@@ -77,6 +77,11 @@ export default class UserService extends DatabaseService {
             values.push(data.name);
         }
 
+        if (data.business_name) {
+            setClauses.push(`business_name = $${values.length + 1}`);
+            values.push(data.business_name);
+        }
+
         if (setClauses.length === 0) {
             return {}
         }
@@ -86,7 +91,7 @@ export default class UserService extends DatabaseService {
                 UPDATE users
                 SET ${setClauses.join(', ')}
                 WHERE id = $1
-                RETURNING id, name, email, created_at, updated_at;
+                RETURNING id, name, email, created_at, updated_at, business_name;
             `, values);
 
             return result.rows[0]
