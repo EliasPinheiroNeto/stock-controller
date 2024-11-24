@@ -13,7 +13,10 @@ export default class MovementService extends DatabaseService {
 
   public async findByID(id: number) {
     const result = await this.conn.query<MovementSchema>(
-      `SELECT * FROM stock_movements WHERE id = $1`,
+      `SELECT s.*, i.name as item_name
+      FROM stock_movements s
+      JOIN items i ON i.id = s.item_id
+      WHERE s.id = $1`,
       [id]
     );
 

@@ -49,6 +49,22 @@ export default class EmployeeService {
         return result.rows[0]
     }
 
+    public async findByUserId(userId: number) {
+        const result = await this.conn.query<EmployeeSchema>(`--sql
+            SELECT
+                id,
+                name,
+                user_id,
+                created_at,
+                updated_at,
+                identity
+            FROM employees
+            WHERE user_id = $1
+        `, [userId])
+
+        return result.rows
+    }
+
     public async insert(userId: number, data: EmployeeCreateSchema) {
         try {
             const hashedPassword = await AuthService.hashPassword(data.password)
@@ -140,8 +156,9 @@ export default class EmployeeService {
 
     public async validateLogin(data: EmployeeLoginSchema) {
         const result = await this.conn.query<EmployeeFullSchema>(`--sql
-            SELECT *
-            FROM employees
+            SELECT e.*, u.email
+            FROM employees e
+            JOIN users u ON e.user_id = u.id
             WHERE identity = $1
         `, [data.identity])
 

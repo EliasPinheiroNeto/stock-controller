@@ -10,6 +10,10 @@ export default class EmployeeController extends Controller {
     protected assignRoutes(): void {
         this.router.get('/employees', this.getAll.bind(this));
 
+        this.router.get('/users/:id/employees',
+            [RequestService.validateNumberParam('id')],
+            this.getByUserId.bind(this));
+
         this.router.get('/employees/:id',
             [RequestService.validateNumberParam('id')],
             this.getById.bind(this));
@@ -49,6 +53,20 @@ export default class EmployeeController extends Controller {
 
         try {
             const employee = await employeeService.findByID(id);
+
+            res.status(200).send(employee);
+            return
+        } catch (err) {
+            this.errorHandler(err, res);
+        }
+    }
+
+    public async getByUserId(req: Request, res: Response) {
+        const id = +req.params.id;
+        const employeeService = new EmployeeService(this.conn);
+
+        try {
+            const employee = await employeeService.findByUserId(id);
 
             res.status(200).send(employee);
             return
